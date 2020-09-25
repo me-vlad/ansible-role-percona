@@ -1,0 +1,24 @@
+---
+
+- name: Import Percona GPG key
+  rpm_key:
+    state: present
+    key: "{{ percona_gpg_key }}"
+
+- name: Install Percona release package
+  yum:
+    name: "{{ percona_release_rpm }}"
+    state: installed
+    update_cache: yes
+
+- name: Install Percona Server
+  import_tasks: percona_server.yml
+  when: percona_server_install is defined and percona_server_install
+
+- name: Ensure Percona Xtrabackup packages installed
+  yum:
+    name: '{{ percona_xtrabackup_packages }}'
+    state: installed
+  when:
+    - percona_xtrabackup_install is defined and percona_xtrabackup_install
+    - percona_xtrabackup_packages is defined and percona_xtrabackup_packages | length > 0

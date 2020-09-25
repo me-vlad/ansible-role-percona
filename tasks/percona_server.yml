@@ -1,0 +1,55 @@
+---
+
+- name: Ensure default mysql and mariadb packages removed
+  yum:
+    name: "{{ percona_server_obsoleted_packages }}"
+    state: removed
+  when: percona_server_obsoleted_packages is defined and percona_server_obsoleted_packages | length > 0
+
+- name: Disable mysql and mariadb dnf modules
+#  command:
+#    cmd: dnf -y module disable mysql mariadb
+#    warn: no
+  copy:
+    dest: "/etc/dnf/modules.d/{{ item }}.module"
+    owner: root
+    group: root
+    mode: '0600'
+    content: |
+      [{{ item }}]
+      name={{ item }}
+      stream=
+      profiles=
+      state=disabled
+  loop:
+    - mysql
+    - mariadb
+  when: ansible_facts['os_family'] == 'RedHat' and ansible_facts['distribution_major_version'] == '8'
+
+- name: Ensure Percona Server packages installed
+  yum:
+    name: '{{ percona_server_packages }}'
+    state: installed
+  when: percona_server_packages is defined and percona_server_packages | length > 0
+
+- name: Ensure Percona Server TokuDB packages installed
+  yum:
+    name: '{{ percona_server_tokudb_packages }}'
+    state: installed
+  when:
+    - percona_server_tokudb_install is defined and percona_server_tokudb_install
+    - percona_server_version is defined and percona_server_version in ['56', '57']
+    - percona_server_tokudb_packages is defined and percona_server_tokudb_packages | length > 0
+
+- name: Ensure Percona Server RocksDB packages installed
+  yum:
+    name: '{{ percona_server_rocksdb_packages }}'
+    state: installed
+  when:
+    - percona_server_rocksdb_install is defined and percona_server_rocksdb_install
+    - percona_server_version is defined and percona_server_version == '57'
+    - percona_server_rocksdb_packages is defined and percona_server_rocksdb_packages | length > 0
+
+- name: Ensure mysql service running and enabled
+#  service: name=mysqld state=started enabled=yes
+  service: name=mysqld state=stopped enabled=no
